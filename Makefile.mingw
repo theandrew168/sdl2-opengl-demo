@@ -5,7 +5,8 @@
 
 # Declare compiler tools and flags
 CC      = x86_64-w64-mingw32-gcc
-CFLAGS  = -std=c99 -D__USE_MINGW_ANSI_STDIO
+CFLAGS  = -std=c99
+CFLAGS += -D__USE_MINGW_ANSI_STDIO
 CFLAGS += -fPIC -g -Og
 CFLAGS += -Wall -Wextra -Wpedantic
 CFLAGS += -Wno-unused

@@ -1,8 +1,11 @@
+#include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
 
 #include <SDL2/SDL.h>
 #include <SDL2/SDL_opengl.h>
+
+#include "opengl.h"
 
 enum {
     WINDOW_WIDTH = 640,
@@ -61,7 +64,27 @@ main(int argc, char* argv[])
     // Enable v-sync (set 1 to enable, 0 to disable)
     SDL_GL_SetSwapInterval(1);
 
-    
+    // Load the modern OpenGL funcs
+    opengl_load_functions();
+
+    // TODO: do modern OpenGL stuff
+    GLuint vs = glCreateShader(GL_VERTEX_SHADER);
+    GLuint fs = glCreateShader(GL_FRAGMENT_SHADER);
+    printf("%d %d\n", vs, fs);
+    glDeleteShader(fs);
+    glDeleteShader(vs);
+
+    bool running = true;
+    while (running) {
+        SDL_Event event = { 0 };
+        while (SDL_PollEvent(&event)) {
+            if (event.type == SDL_QUIT) running = false;
+            if (event.type == SDL_KEYUP) {
+                SDL_Keycode key = event.key.keysym.sym;
+                if (key == SDLK_q || key == SDLK_ESCAPE) running = false;
+            }
+        }
+    }
 
     // Cleanup SDL2 resources
     SDL_GL_DeleteContext(context);
