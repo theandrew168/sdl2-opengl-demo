@@ -230,3 +230,56 @@ opengl_load_functions(void)
 
     return true;
 }
+bool
+opengl_shader_compile_source(GLuint shader, const GLchar* source)
+{
+    glShaderSource(shader, 1, &source, NULL);
+    glCompileShader(shader);
+
+    GLint success;
+    glGetShaderiv(shader, GL_COMPILE_STATUS, &success);
+    if (success != GL_TRUE) {
+        GLint info_log_length;
+        glGetShaderiv(shader, GL_INFO_LOG_LENGTH, &info_log_length);
+
+        GLchar* info_log = malloc(info_log_length);
+        glGetShaderInfoLog(shader, info_log_length, NULL, info_log);
+
+        fprintf(stderr, "failed to compile shader:\n%s\n", info_log);
+        free(info_log);
+
+        return false;
+    }
+
+    return true;
+}
+
+bool
+opengl_shader_link_program(GLuint program, GLuint vertex_shader, GLuint fragment_shader)
+{
+    glAttachShader(program, vertex_shader);
+    glAttachShader(program, fragment_shader);
+    glLinkProgram(program);
+
+    GLint success;
+    glGetProgramiv(program, GL_LINK_STATUS, &success);
+    if (success != GL_TRUE) {
+        GLint info_log_length;
+        glGetProgramiv(program, GL_INFO_LOG_LENGTH, &info_log_length);
+
+        GLchar* info_log = malloc(info_log_length);
+        glGetProgramInfoLog(program, info_log_length, NULL, info_log);
+
+        fprintf(stderr, "failed to link program:\n%s\n", info_log);
+        free(info_log);
+
+        glDetachShader(program, vertex_shader);
+        glDetachShader(program, fragment_shader);
+
+        return false;
+    }
+
+    glDetachShader(program, vertex_shader);
+    glDetachShader(program, fragment_shader);
+    return false;
+}

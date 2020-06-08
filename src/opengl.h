@@ -5,6 +5,7 @@
 
 #include <SDL2/SDL_opengl.h>
 
+// TODO: design the macros to clean this up
 PFNGLCREATESHADERPROC glCreateShader;
 PFNGLDELETESHADERPROC glDeleteShader;
 PFNGLATTACHSHADERPROC glAttachShader;
@@ -37,5 +38,8 @@ PFNGLENABLEVERTEXATTRIBARRAYPROC glEnableVertexAttribArray;
 PFNGLDISABLEVERTEXATTRIBARRAYPROC glDisableVertexAttribArray;
 
 bool opengl_load_functions(void);
+
+bool opengl_shader_compile_source(GLuint shader, const GLchar* source);
+bool opengl_shader_link_program(GLuint program, GLuint vertex_shader, GLuint fragment_shader);
 
 #endif

@@ -1,6 +1,7 @@
 #include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 
 #include <SDL2/SDL.h>
 #include <SDL2/SDL_opengl.h>
@@ -18,63 +19,36 @@ const float SQUARE[] = {
      1.0f, -1.0f
 };
 
-static bool
-opengl_shader_compile_source(GLuint shader, const GLchar* source)
+static void
+print_usage(const char* arg0)
 {
-    glShaderSource(shader, 1, &source, NULL);
-    glCompileShader(shader);
-
-    GLint success;
-    glGetShaderiv(shader, GL_COMPILE_STATUS, &success);
-    if (success != GL_TRUE) {
-        GLint info_log_length;
-        glGetShaderiv(shader, GL_INFO_LOG_LENGTH, &info_log_length);
-
-        GLchar* info_log = malloc(info_log_length);
-        glGetShaderInfoLog(shader, info_log_length, NULL, info_log);
-
-        fprintf(stderr, "failed to compile shader:\n%s\n", info_log);
-        free(info_log);
-
-        return false;
-    }
-
-    return true;
-}
-
-static bool
-opengl_shader_link_program(GLuint program, GLuint vertex_shader, GLuint fragment_shader)
-{
-    glAttachShader(program, vertex_shader);
-    glAttachShader(program, fragment_shader);
-    glLinkProgram(program);
-
-    GLint success;
-    glGetProgramiv(program, GL_LINK_STATUS, &success);
-    if (success != GL_TRUE) {
-        GLint info_log_length;
-        glGetProgramiv(program, GL_INFO_LOG_LENGTH, &info_log_length);
-
-        GLchar* info_log = malloc(info_log_length);
-        glGetProgramInfoLog(program, info_log_length, NULL, info_log);
-
-        fprintf(stderr, "failed to link program:\n%s\n", info_log);
-        free(info_log);
-
-        glDetachShader(program, vertex_shader);
-        glDetachShader(program, fragment_shader);
-
-        return false;
-    }
-
-    glDetachShader(program, vertex_shader);
-    glDetachShader(program, fragment_shader);
-    return false;
+    printf("usage: %s [options]\n", arg0);
+    printf("\n");
+    printf("Options:\n");
+    printf("  -h --help        print this help\n");
+    printf("  -f --fullscreen  fullscreen window\n");
+    printf("  -v --vsync       enable vsync\n");
 }
 
 int
 main(int argc, char* argv[])
 {
+    bool fullscreen = false;
+    bool vsync = false;
+
+    for (int i = 1; i < argc; i++) {
+        if (strcmp(argv[i], "-h") == 0 || strcmp(argv[i], "--help") == 0) {
+            print_usage(argv[0]);
+            return EXIT_SUCCESS;
+        }
+        if (strcmp(argv[i], "-f") == 0 || strcmp(argv[i], "--fullscreen") == 0) {
+            fullscreen = true;
+        }
+        if (strcmp(argv[i], "-v") == 0 || strcmp(argv[i], "--vsync") == 0) {
+            vsync = true;
+        }
+    }
+
     if (SDL_Init(SDL_INIT_VIDEO) != 0) {
         fprintf(stderr, "failed to init SDL2: %s\n", SDL_GetError());
         return EXIT_FAILURE;
@@ -101,16 +75,16 @@ main(int argc, char* argv[])
     SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_CORE);
     SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, 1);
 
+    unsigned long flags = SDL_WINDOW_OPENGL;
+    if (fullscreen) flags |= SDL_WINDOW_FULLSCREEN_DESKTOP;
+
     SDL_Window* window = SDL_CreateWindow(
         "SDL2 OpenGL Demo",
         SDL_WINDOWPOS_UNDEFINED,
         SDL_WINDOWPOS_UNDEFINED,
         640,
         640,
-        SDL_WINDOW_OPENGL);
-
-// TODO: add a flag for this
-//        SDL_WINDOW_OPENGL | SDL_WINDOW_FULLSCREEN_DESKTOP);
+        flags);
 
     if (window == NULL) {
         SDL_Quit();
@@ -135,8 +109,7 @@ main(int argc, char* argv[])
     printf("GLSL Version:    %s\n", glGetString(GL_SHADING_LANGUAGE_VERSION));
 
     // Enable v-sync (set 1 to enable, 0 to disable)
-    // TODO: add a flag for this
-    SDL_GL_SetSwapInterval(0);
+    SDL_GL_SetSwapInterval(vsync ? 1 : 0);
 
     // Load the modern OpenGL funcs
     opengl_load_functions();
