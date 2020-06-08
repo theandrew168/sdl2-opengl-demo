@@ -15,7 +15,7 @@ LDLIBS  = -lGL -lSDL2
 
 
 # Build the main executable
-demo: src/main.c src/opengl.c
+demo: src/main.c src/opengl.c src/opengl.h
 	$(CC) $(CFLAGS) $(LDFLAGS) -o $@ src/main.c src/opengl.c $(LDLIBS)
 
 

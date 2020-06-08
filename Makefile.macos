@@ -15,7 +15,7 @@ LDLIBS  = -framework OpenGL -lSDL2
 
 
 # Build the main binary
-demo: src/main.c src/opengl.c
+demo: src/main.c src/opengl.c src/opengl.h
 	$(CC) $(CFLAGS) $(LDFLAGS) -o $@ src/main.c src/opengl.c $(LDLIBS)
 
 

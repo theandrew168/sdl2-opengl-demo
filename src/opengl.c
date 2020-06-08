@@ -1,83 +1,77 @@
 #include <stdbool.h>
+#include <stdio.h>
+#include <stdlib.h>
 
 #include <SDL2/SDL.h>
 #include <SDL2/SDL_opengl.h>
 
 #include "opengl.h"
 
-// implementation pointers for the opengl funcs
-PFNGLCREATESHADERPROC glCreateShader = NULL;
-PFNGLDELETESHADERPROC glDeleteShader = NULL;
-PFNGLATTACHSHADERPROC glAttachShader = NULL;
-PFNGLDETACHSHADERPROC glDetachShader = NULL;
-PFNGLSHADERSOURCEPROC glShaderSource = NULL;
-PFNGLCOMPILESHADERPROC glCompileShader = NULL;
-PFNGLGETSHADERIVPROC glGetShaderiv = NULL;
-PFNGLGETSHADERINFOLOGPROC glGetShaderInfoLog = NULL;
-PFNGLCREATEPROGRAMPROC glCreateProgram = NULL;
-PFNGLDELETEPROGRAMPROC glDeleteProgram = NULL;
-PFNGLUSEPROGRAMPROC glUseProgram = NULL;
-PFNGLLINKPROGRAMPROC glLinkProgram = NULL;
-PFNGLVALIDATEPROGRAMPROC glValidateProgram = NULL;
-PFNGLGETPROGRAMIVPROC glGetProgramiv = NULL;
-PFNGLGETPROGRAMINFOLOGPROC glGetProgramInfoLog = NULL;
-PFNGLUNIFORM1IPROC glUniform1i = NULL;
-PFNGLUNIFORM1FPROC glUniform1f = NULL;
-PFNGLUNIFORM3FPROC glUniform3f = NULL;
-PFNGLUNIFORMMATRIX4FVPROC glUniformMatrix4fv = NULL;
-PFNGLGETUNIFORMLOCATIONPROC glGetUniformLocation = NULL;
-PFNGLGENBUFFERSPROC glGenBuffers = NULL;
-PFNGLDELETEBUFFERSPROC glDeleteBuffers = NULL;
-PFNGLBINDBUFFERPROC glBindBuffer = NULL;
-PFNGLBUFFERDATAPROC glBufferData = NULL;
-PFNGLGENVERTEXARRAYSPROC glGenVertexArrays = NULL;
-PFNGLDELETEVERTEXARRAYSPROC glDeleteVertexArrays = NULL;
-PFNGLBINDVERTEXARRAYPROC glBindVertexArray = NULL;
-PFNGLVERTEXATTRIBPOINTERPROC glVertexAttribPointer = NULL;
-PFNGLENABLEVERTEXATTRIBARRAYPROC glEnableVertexAttribArray = NULL;
-PFNGLDISABLEVERTEXATTRIBARRAYPROC glDisableVertexAttribArray = NULL;
+// Define an OpenGL function. Until dynamically loaded, it will
+// be set to NULL and should NOT be called. Doing so will cause
+// a segfault.
+//
+// OPENGL_DEFINE(glCreateShader, PFNGLCREATESHADERPROC)
+//
+//   becomes
+//
+// PFNGLCREATESHADERPROC glCreateShader = NULL;
+#define OPENGL_DEFINE(func_name, func_type)  \
+    func_type func_name = NULL;
 
-// union to bridge the gap between object and function pointers
+// Define all of the initally-NULL OpenGL functions.
+#define OPENGL_FUNCTION OPENGL_DEFINE
+OPENGL_FUNCTIONS
+#undef OPENGL_FUNCTION
+
+// Define a union that bridges the gap between object pointers
+// and function pointers. This is needed because the C standard
+// forbids assignment between function pointers and object pointers
+// (void*, in our case). They are NOT guaranteed to be the same size.
+// By pulling the void* from SDL_GL_GetProcAddress though this union,
+// we ensure that the potential difference in pointer sizes is mitigated.
 union bridge {
     void* proc_address;
-    PFNGLCREATESHADERPROC glCreateShader;
-    PFNGLDELETESHADERPROC glDeleteShader;
-    PFNGLATTACHSHADERPROC glAttachShader;
-    PFNGLDETACHSHADERPROC glDetachShader;
-    PFNGLSHADERSOURCEPROC glShaderSource;
-    PFNGLCOMPILESHADERPROC glCompileShader;
-    PFNGLGETSHADERIVPROC glGetShaderiv;
-    PFNGLGETSHADERINFOLOGPROC glGetShaderInfoLog;
-    PFNGLCREATEPROGRAMPROC glCreateProgram;
-    PFNGLDELETEPROGRAMPROC glDeleteProgram;
-    PFNGLUSEPROGRAMPROC glUseProgram;
-    PFNGLLINKPROGRAMPROC glLinkProgram;
-    PFNGLVALIDATEPROGRAMPROC glValidateProgram;
-    PFNGLGETPROGRAMIVPROC glGetProgramiv;
-    PFNGLGETPROGRAMINFOLOGPROC glGetProgramInfoLog;
-    PFNGLUNIFORM1IPROC glUniform1i;
-    PFNGLUNIFORM1FPROC glUniform1f;
-    PFNGLUNIFORM3FPROC glUniform3f;
-    PFNGLUNIFORMMATRIX4FVPROC glUniformMatrix4fv;
-    PFNGLGETUNIFORMLOCATIONPROC glGetUniformLocation;
-    PFNGLGENBUFFERSPROC glGenBuffers;
-    PFNGLDELETEBUFFERSPROC glDeleteBuffers;
-    PFNGLBINDBUFFERPROC glBindBuffer;
-    PFNGLBUFFERDATAPROC glBufferData;
-    PFNGLGENVERTEXARRAYSPROC glGenVertexArrays;
-    PFNGLDELETEVERTEXARRAYSPROC glDeleteVertexArrays;
-    PFNGLBINDVERTEXARRAYPROC glBindVertexArray;
-    PFNGLVERTEXATTRIBPOINTERPROC glVertexAttribPointer;
-    PFNGLENABLEVERTEXATTRIBARRAYPROC glEnableVertexAttribArray;
-    PFNGLDISABLEVERTEXATTRIBARRAYPROC glDisableVertexAttribArray;
+
+    // Reuse the declaration macro from the header.
+    #define OPENGL_FUNCTION OPENGL_DECLARE
+    OPENGL_FUNCTIONS
+    #undef OPENGL_FUNCTION
 };
+
+// Load an OpenGL function by passing it through the union. Check
+// for errors and return from the load if something goes wrong. This
+// expansion uses a C99 designated initializer to cleanly instantiate
+// the union bridge. The OpenGL function pointer is then pulled out
+// and assigned to the the definition that was initially NULL.
+//
+// In short, the void* goes in and the OpenGL function comes out.
+// Using the union bridge is necesssary to keep the compilers happy
+// (-std=c99 -Wall -Wextra -Wpedantic).
+//
+// OPENGL_LOAD(glCreateShader, PFNGLCREATESHADERPROC)
+//
+//   becomes
+//
+// glCreateShader = (union bridge){
+//     .proc_address = SDL_GL_GetProcAddress("glCreateShader")
+// }.glCreateShader;
+// if (glCreateShader == NULL) {
+//     fprintf(stderr, "failed to load func: %s\n", "glCreateShader);
+//     return false;
+// }
+#define OPENGL_LOAD(func_name, func_type)                          \
+    func_name = (union bridge){                                    \
+        .proc_address = SDL_GL_GetProcAddress(#func_name)          \
+    }.func_name;                                                   \
+    if (func_name == NULL) {                                       \
+        fprintf(stderr, "failed to load func: %s\n", #func_name);  \
+        return false;                                              \
+    }
 
 bool
 opengl_load_functions(void)
 {
-    // TODO: Make this less repetitive (macros?)
-    // TODO: Check for failed func grabs
-
     // use SDL2's platform-agnostic loader to pull the "real" addresses
     //  out by name and assign to the definitions above
     // WARN: ISO C forbids assignment between function pointer and ‘void *’
@@ -104,129 +98,13 @@ opengl_load_functions(void)
 //    glCreateShader = bridge.glCreateShader;
 
     // third way: one-liner with pre-defined bridge union, uses no temp vars!
-    glCreateShader = (union bridge){
-        .proc_address = SDL_GL_GetProcAddress("glCreateShader")
-    }.glCreateShader;
+//    glCreateShader = (union bridge){
+//        .proc_address = SDL_GL_GetProcAddress("glCreateShader")
+//    }.glCreateShader;
 
-    glCreateShader = (union bridge){
-        .proc_address = SDL_GL_GetProcAddress("glCreateShader")
-    }.glCreateShader;
-
-    glDeleteShader = (union bridge){
-        .proc_address = SDL_GL_GetProcAddress("glDeleteShader")
-    }.glDeleteShader;
-
-    glAttachShader = (union bridge){
-        .proc_address = SDL_GL_GetProcAddress("glAttachShader")
-    }.glAttachShader;
-
-    glDetachShader = (union bridge){
-        .proc_address = SDL_GL_GetProcAddress("glDetachShader")
-    }.glDetachShader;
-
-    glShaderSource = (union bridge){
-        .proc_address = SDL_GL_GetProcAddress("glShaderSource")
-    }.glShaderSource;
-
-    glCompileShader = (union bridge){
-        .proc_address = SDL_GL_GetProcAddress("glCompileShader")
-    }.glCompileShader;
-
-    glGetShaderiv = (union bridge){
-        .proc_address = SDL_GL_GetProcAddress("glGetShaderiv")
-    }.glGetShaderiv;
-
-    glGetShaderInfoLog = (union bridge){
-        .proc_address = SDL_GL_GetProcAddress("glGetShaderInfoLog")
-    }.glGetShaderInfoLog;
-
-    glCreateProgram = (union bridge){
-        .proc_address = SDL_GL_GetProcAddress("glCreateProgram")
-    }.glCreateProgram;
-
-    glDeleteProgram = (union bridge){
-        .proc_address = SDL_GL_GetProcAddress("glDeleteProgram")
-    }.glDeleteProgram;
-
-    glUseProgram = (union bridge){
-        .proc_address = SDL_GL_GetProcAddress("glUseProgram")
-    }.glUseProgram;
-
-    glLinkProgram = (union bridge){
-        .proc_address = SDL_GL_GetProcAddress("glLinkProgram")
-    }.glLinkProgram;
-
-    glValidateProgram = (union bridge){
-        .proc_address = SDL_GL_GetProcAddress("glValidateProgram")
-    }.glValidateProgram;
-
-    glGetProgramiv = (union bridge){
-        .proc_address = SDL_GL_GetProcAddress("glGetProgramiv")
-    }.glGetProgramiv;
-
-    glGetProgramInfoLog = (union bridge){
-        .proc_address = SDL_GL_GetProcAddress("glGetProgramInfoLog")
-    }.glGetProgramInfoLog;
-
-    glUniform1i = (union bridge){
-        .proc_address = SDL_GL_GetProcAddress("glUniform1i")
-    }.glUniform1i;
-
-    glUniform1f = (union bridge){
-        .proc_address = SDL_GL_GetProcAddress("glUniform1f")
-    }.glUniform1f;
-
-    glUniform3f = (union bridge){
-        .proc_address = SDL_GL_GetProcAddress("glUniform3f")
-    }.glUniform3f;
-
-    glUniformMatrix4fv = (union bridge){
-        .proc_address = SDL_GL_GetProcAddress("glUniformMatrix4fv")
-    }.glUniformMatrix4fv;
-
-    glGetUniformLocation = (union bridge){
-        .proc_address = SDL_GL_GetProcAddress("glGetUniformLocation")
-    }.glGetUniformLocation;
-
-    glGenBuffers = (union bridge){
-        .proc_address = SDL_GL_GetProcAddress("glGenBuffers")
-    }.glGenBuffers;
-
-    glDeleteBuffers = (union bridge){
-        .proc_address = SDL_GL_GetProcAddress("glDeleteBuffers")
-    }.glDeleteBuffers;
-
-    glBindBuffer = (union bridge){
-        .proc_address = SDL_GL_GetProcAddress("glBindBuffer")
-    }.glBindBuffer;
-
-    glBufferData = (union bridge){
-        .proc_address = SDL_GL_GetProcAddress("glBufferData")
-    }.glBufferData;
-
-    glGenVertexArrays = (union bridge){
-        .proc_address = SDL_GL_GetProcAddress("glGenVertexArrays")
-    }.glGenVertexArrays;
-
-    glDeleteVertexArrays = (union bridge){
-        .proc_address = SDL_GL_GetProcAddress("glDeleteVertexArrays")
-    }.glDeleteVertexArrays;
-
-    glBindVertexArray = (union bridge){
-        .proc_address = SDL_GL_GetProcAddress("glBindVertexArray")
-    }.glBindVertexArray;
-
-    glVertexAttribPointer = (union bridge){
-        .proc_address = SDL_GL_GetProcAddress("glVertexAttribPointer")
-    }.glVertexAttribPointer;
-
-    glEnableVertexAttribArray = (union bridge){
-        .proc_address = SDL_GL_GetProcAddress("glEnableVertexAttribArray")
-    }.glEnableVertexAttribArray;
-
-    glDisableVertexAttribArray = (union bridge){
-        .proc_address = SDL_GL_GetProcAddress("glDisableVertexAttribArray")
-    }.glDisableVertexAttribArray;
+    #define OPENGL_FUNCTION OPENGL_LOAD
+    OPENGL_FUNCTIONS
+    #undef OPENGL_FUNCTION
 
     return true;
 }

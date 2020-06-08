@@ -19,7 +19,7 @@ LDLIBS += -lopengl32 -lsetupapi -lversion -lwinmm
 
 
 # Build the main executable
-demo.exe: src/main.c src/opengl.c ./SDL2/lib/libSDL2.a
+demo.exe: src/main.c src/opengl.c src/opengl.h ./SDL2/lib/libSDL2.a
 	$(CC) $(CFLAGS) $(LDFLAGS) -o $@ src/main.c src/opengl.c $(LDLIBS)
 
 
