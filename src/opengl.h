@@ -63,9 +63,8 @@
 OPENGL_FUNCTIONS
 #undef OPENGL_FUNCTION
 
+// Call this function after obtaining an OpenGL context
+// to dynamically load the modern functions.
 bool opengl_load_functions(void);
-
-bool opengl_shader_compile_source(GLuint shader, const GLchar* source);
-bool opengl_shader_link_program(GLuint program, GLuint vertex_shader, GLuint fragment_shader);
 
 #endif
