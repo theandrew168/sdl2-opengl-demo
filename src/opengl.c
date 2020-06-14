@@ -31,12 +31,8 @@ OPENGL_FUNCTIONS
 // By pulling the void* from SDL_GL_GetProcAddress though this union,
 // we ensure that the potential difference in pointer sizes is mitigated.
 union bridge {
-    void* proc_address;
-
-    // Reuse the declaration macro from the header.
-    #define OPENGL_FUNCTION OPENGL_DECLARE
-    OPENGL_FUNCTIONS
-    #undef OPENGL_FUNCTION
+    void* object_ptr;
+    void (*function_ptr)(void);
 };
 
 // Load an OpenGL function by passing it through the union. Check
@@ -53,17 +49,27 @@ union bridge {
 //
 //   becomes
 //
-// glCreateShader = (union bridge){
-//     .proc_address = SDL_GL_GetProcAddress("glCreateShader")
-// }.glCreateShader;
+// glCreateShader = (PFNGLCREATESHADERPROC)(union bridge){
+//     .object_ptr = SDL_GL_GetProcAddress("glCreateShader")
+// }.function_ptr;
+#define OPENGL_LOAD(func_name, func_type)                \
+    func_name = (func_type)(union bridge){               \
+        .object_ptr = SDL_GL_GetProcAddress(#func_name)  \
+    }.function_ptr;
+
+// Extra safety step to ensure that all the OpenGL functions were successfully
+// dynamically loaded. If a function failed to load, print and error and
+// return false back to the caller.
+//
+// OPENGL_VALIDATE(glCreateShader, PFNGLCREATESHADERPROC)
+//
+//   becomes
+//
 // if (glCreateShader == NULL) {
 //     fprintf(stderr, "failed to load func: %s\n", "glCreateShader);
 //     return false;
 // }
-#define OPENGL_LOAD(func_name, func_type)                          \
-    func_name = (union bridge){                                    \
-        .proc_address = SDL_GL_GetProcAddress(#func_name)          \
-    }.func_name;                                                   \
+#define OPENGL_VALIDATE(func_name, func_type)                      \
     if (func_name == NULL) {                                       \
         fprintf(stderr, "failed to load func: %s\n", #func_name);  \
         return false;                                              \
@@ -103,6 +109,10 @@ opengl_load_functions(void)
 //    }.glCreateShader;
 
     #define OPENGL_FUNCTION OPENGL_LOAD
+    OPENGL_FUNCTIONS
+    #undef OPENGL_FUNCTION
+
+    #define OPENGL_FUNCTION OPENGL_VALIDATE
     OPENGL_FUNCTIONS
     #undef OPENGL_FUNCTION
 
