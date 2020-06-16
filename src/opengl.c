@@ -80,33 +80,13 @@ opengl_load_functions(void)
 {
     // use SDL2's platform-agnostic loader to pull the "real" addresses
     //  out by name and assign to the definitions above
-    // WARN: ISO C forbids assignment between function pointer and ‘void *’
+    //
+    // WARN: ISO C forbids conversion of object pointer to function pointer type
+    //
     // the C standard defines func ptrs and object ptrs as different types
     //  that are potentially different sizes (though in practice they tend
     //  to be the same)
-    //glCreateShader = SDL_GL_GetProcAddress("glCreateShader");
-
-    // create a bridge union and pass the pointer through it
-
-    // first way: declare bridge up top with everything and reuse an instance
-//    union bridge bridge = { 0 };
-//    bridge.proc_address = SDL_GL_GetProcAddress("glCreateShader");
-//    glCreateShader = bridge.glCreateShader;
-
-    // second way: create an anonymous union and init with the proc address
-    //  this way would run into name collisions for the var, though
-//    union {
-//        void* proc_address;
-//        PFNGLCREATESHADERPROC glCreateShader;
-//    } bridge = { 
-//        .proc_address = SDL_GL_GetProcAddress("glCreateShader"),
-//    };
-//    glCreateShader = bridge.glCreateShader;
-
-    // third way: one-liner with pre-defined bridge union, uses no temp vars!
-//    glCreateShader = (union bridge){
-//        .proc_address = SDL_GL_GetProcAddress("glCreateShader")
-//    }.glCreateShader;
+    // glCreateShader = (PFNGLCREATESHADERPROC)SDL_GL_GetProcAddress("glCreateShader");
 
     #define OPENGL_FUNCTION OPENGL_LOAD
     OPENGL_FUNCTIONS
