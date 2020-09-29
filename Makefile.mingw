@@ -33,7 +33,7 @@ demo.exe: src/main.c src/opengl.c src/opengl.h ./SDL2/lib/libSDL2.a
 # Helper target that cleans up build artifacts
 .PHONY: clean
 clean:
-	rm -fr demo.exe src/*.o
+	rm -fr demo demo.exe src/*.o
 
 
 # Default rule for compiling .c files to .o object files

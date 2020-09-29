@@ -22,7 +22,7 @@ demo: src/main.c src/opengl.c src/opengl.h
 # Helper target that cleans up build artifacts
 .PHONY: clean
 clean:
-	rm -fr demo src/*.o
+	rm -fr demo demo.exe src/*.o
 
 
 # Default rule for compiling .c files to .o object files
