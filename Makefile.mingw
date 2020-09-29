@@ -9,7 +9,7 @@ CFLAGS  = -std=c99
 CFLAGS += -D__USE_MINGW_ANSI_STDIO
 CFLAGS += -fPIC -g -Og
 CFLAGS += -Wall -Wextra -Wpedantic
-CFLAGS += -Wno-unused
+CFLAGS += -Wno-unused-parameter -Wno-unused-result -Wno-unused-function
 CFLAGS += -Isrc/ -I./SDL2/include
 LDFLAGS = -mwindows
 LDLIBS  = -lmingw32

@@ -8,7 +8,7 @@ CC      = cc
 CFLAGS  = -std=c99
 CFLAGS += -fPIC -g -Og
 CFLAGS += -Wall -Wextra -Wpedantic
-CFLAGS += -Wno-unused
+CFLAGS += -Wno-unused-parameter -Wno-unused-result -Wno-unused-function
 CFLAGS += -Isrc/
 LDFLAGS =
 LDLIBS  = -lGL -lSDL2
