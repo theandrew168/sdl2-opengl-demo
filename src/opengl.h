@@ -52,9 +52,9 @@
 //
 //   becomes
 //
-// PFNGLCREATESHADERPROC glCreateShader;
+// extern PFNGLCREATESHADERPROC glCreateShader;
 #define OPENGL_DECLARE(func_name, func_type)  \
-    func_type func_name;
+    extern func_type func_name;
 
 // Set the OPENGL_FUNCTION macro to OPENGL_DECLARE and then splat
 // all of the declarations out here. Unset OPENGL_FUNCTION back
