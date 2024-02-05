@@ -141,19 +141,17 @@ main(int argc, char* argv[])
         flags);
 
     if (window == NULL) {
-        SDL_Quit();
-
         fprintf(stderr, "failed to create SDL2 window: %s\n", SDL_GetError());
+        SDL_Quit();
         return EXIT_FAILURE;
     }
 
     // SDL_GLContext is an alias for "void*"
     SDL_GLContext context = SDL_GL_CreateContext(window);
     if (context == NULL) {
+        fprintf(stderr, "failed to create OpenGL context: %s\n", SDL_GetError());
         SDL_DestroyWindow(window);
         SDL_Quit();
-
-        fprintf(stderr, "failed to create OpenGL context: %s\n", SDL_GetError());
         return EXIT_FAILURE;
     }
 
